@@ -1,7 +1,10 @@
 package cjw.pe.naversearchimage
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.drawable.Drawable
+import android.net.Uri
+import android.os.Bundle
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
@@ -14,6 +17,7 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
+import com.jakewharton.rxbinding.view.RxView
 import io.reactivex.Observable
 import io.reactivex.ObservableOnSubscribe
 import kotlinx.android.synthetic.main.item_image.view.*
@@ -32,13 +36,10 @@ class SearchRecyclerViewAdapter constructor(context: Context, items : ArrayList<
         this.items = items;
     }
 
-
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): CustomViewHolder {
-        var itemView: View = LayoutInflater.from(context).inflate(R.layout.item_image, parent, false)
-        var customViewHolder = CustomViewHolder(itemView)
-        return customViewHolder
+        val itemView: View = LayoutInflater.from(context).inflate(R.layout.item_image, parent, false)
+        return CustomViewHolder(itemView)
     }
-
 
     override fun onBindViewHolder(holder: CustomViewHolder, position: Int) {
         val searchItem:SearchItem = items.get(position)
@@ -72,7 +73,18 @@ class SearchRecyclerViewAdapter constructor(context: Context, items : ArrayList<
                 .error(R.drawable.ic_error))
             .into(holder.itemImageView)
 
-        holder.titleTextView.setText(searchItem.title)
+        holder.titleTextView.text = searchItem.title
+
+        RxView
+            .clicks(holder.cardViewLayout)
+            .subscribe {
+                val uris = Uri.parse(searchItem.link)
+                val intents = Intent(Intent.ACTION_VIEW, uris)
+                val b = Bundle()
+                b.putBoolean("new_window", true)
+                intents.putExtras(b)
+                context.startActivity(intents)
+            }
 
     }
 
@@ -82,8 +94,9 @@ class SearchRecyclerViewAdapter constructor(context: Context, items : ArrayList<
 
 
     inner class CustomViewHolder constructor(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        var itemImageView = itemView.findViewById<ImageView>(R.id.itemImageView)
-        var titleTextView = itemView.findViewById<TextView>(R.id.titleTextView)
+        var cardViewLayout = itemView.cardViewLayout
+        var itemImageView = itemView.itemImageView
+        var titleTextView = itemView.titleTextView
         var progessBar = itemView.progressBar
     }
 }
