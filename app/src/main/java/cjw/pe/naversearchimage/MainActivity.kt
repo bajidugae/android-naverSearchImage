@@ -8,8 +8,12 @@ import android.widget.Toast
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.jakewharton.rxbinding.view.RxView
+import io.reactivex.Observable
+import io.reactivex.Observer
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.Consumer
 import io.reactivex.observers.DisposableSingleObserver
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_main.*
@@ -21,6 +25,8 @@ class MainActivity : AppCompatActivity() {
 
     var itemList:ArrayList<SearchItem> = ArrayList();
 
+    var compositeDisposable:CompositeDisposable = CompositeDisposable()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -29,35 +35,18 @@ class MainActivity : AppCompatActivity() {
         searchRecyclerView.adapter = SearchRecyclerViewAdapter(this,itemList)
 
         searchButton.setOnClickListener {
-            val single:Single<JsonObject> =
+            val single:Single<NaverSearchItem> =
                 RetroFitManager.naverService.searchImage(clientId,
                                                          clientSecret,
                                                          searchEditText.text.toString())
-
-            single.subscribeOn(Schedulers.io())
+                single.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(object : DisposableSingleObserver<JsonObject>() {
-                    override fun onError(e: Throwable) {
-                        Toast.makeText(applicationContext,"error!",Toast.LENGTH_SHORT).show()
-                    }
-
-                    override fun onSuccess(t: JsonObject) {
-                        itemList.clear()
-                        val itemArray:JsonArray? = t.getAsJsonArray("items");
-
-                        itemArray?.let{
-                            for(item in it) {
-                                val itemObject:JsonObject = item.asJsonObject;
-                                itemList.add( SearchItem( itemObject.get("title").asString,
-                                    itemObject.get("link").asString,
-                                    itemObject.get("thumbnail").asString,
-                                    itemObject.get("sizeheight").asInt,
-                                    itemObject.get("sizewidth").asInt))
-                            }
-                        }
-
-                        searchRecyclerView.adapter.notifyDataSetChanged();
-                    }
+                .subscribe({ t: NaverSearchItem ->
+                    itemList.clear()
+                    itemList.addAll( t.items )
+                    searchRecyclerView.adapter.notifyDataSetChanged()
+                },{ t: Throwable ->
+                    t.printStackTrace()
                 })
         }
 

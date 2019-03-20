@@ -13,5 +13,5 @@ interface RetroFitInterface {
     fun  searchImage(
         @Header("X-Naver-Client-Id") id:String,
         @Header("X-Naver-Client-Secret") secret:String,
-        @Query("query")query:String ): Single<JsonObject>
+        @Query("query")query:String ): Single<NaverSearchItem>
 }
